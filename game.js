@@ -798,7 +798,10 @@ class Game {
                 // Ball must be in hitting range height (e.g. z < 50)
                 if (this.ball.z < 52) {
                     this.ball.y = this.player.y - 5; // reposition slightly above
-                    this.ball.vy = -Math.abs(this.ball.vy);
+                    
+                    // Boost horizontal speed on hit and ensure minimum speed
+                    const hitSpeed = Math.max(8.0, Math.abs(this.ball.vy) * 1.05);
+                    this.ball.vy = -hitSpeed;
                     
                     // Ball direction reflects hit location on paddle (adds steering)
                     const offset = (this.ball.x - this.player.x) / paddleHalfWidth; // -1 to 1
@@ -817,9 +820,9 @@ class Game {
                     if (wantsSmash && this.smashMeter >= 100 && this.ball.z > 15) {
                         // SMASH!
                         this.ball.isSmash = true;
-                        this.ball.vy *= 1.85;
+                        this.ball.vy = -hitSpeed * 1.85;
                         this.ball.vx *= 1.4;
-                        this.ball.vz = -1; // low trajectory smash
+                        this.ball.vz = 4.2 + Math.random() * 0.6; // low trajectory smash that still clears the net
                         
                         this.smashMeter = 0;
                         this.smashCount++;
@@ -829,6 +832,7 @@ class Game {
                     } else {
                         // Normal Hit
                         this.ball.isSmash = false;
+                        this.ball.vz = 6.8 + Math.random() * 1.2; // nice high arc to clear the net cleanly
                         sfx.playHit(true);
                         this.particles.spawn(this.ball.x, this.ball.y, this.ball.z, '#00f0ff', 12, false);
                         
@@ -852,7 +856,10 @@ class Game {
             if (this.ball.x >= this.ai.x - paddleHalfWidth && this.ball.x <= this.ai.x + paddleHalfWidth) {
                 if (this.ball.z < 52) {
                     this.ball.y = this.ai.y + 5; // reposition slightly below
-                    this.ball.vy = Math.abs(this.ball.vy);
+                    
+                    // Boost horizontal speed on hit and ensure minimum speed
+                    const hitSpeed = Math.max(8.0, Math.abs(this.ball.vy) * 1.05);
+                    this.ball.vy = hitSpeed;
                     
                     // Ball direction reflects hit location on paddle
                     const offset = (this.ball.x - this.ai.x) / paddleHalfWidth; // -1 to 1
@@ -864,11 +871,13 @@ class Game {
                     // AI can also return smash randomly on Legend difficulty
                     if (this.difficulty === 'legend' && Math.random() < 0.25) {
                         this.ball.isSmash = true;
-                        this.ball.vy *= 1.6;
+                        this.ball.vy = hitSpeed * 1.6;
+                        this.ball.vz = 4.2 + Math.random() * 0.6; // AI smash clears the net
                         sfx.playSmash();
                         this.particles.spawn(this.ball.x, this.ball.y, this.ball.z, '#ff007f', 18, true);
                     } else {
                         this.ball.isSmash = false;
+                        this.ball.vz = 6.8 + Math.random() * 1.2; // AI normal return clears the net cleanly
                         sfx.playHit(false);
                         this.particles.spawn(this.ball.x, this.ball.y, this.ball.z, '#ff007f', 12, false);
                     }
