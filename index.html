@@ -53,6 +53,11 @@
 
         <!-- Gameplay UI Overlay -->
         <div id="gameplay-ui" class="ui-container">
+            <div class="hud-left">
+                <button id="tab-manager" class="btn tab-btn active">MANAGER VIEW</button>
+                <button id="tab-editor" class="btn tab-btn">EDITOR VIEW</button>
+            </div>
+
             <div class="scoreboard">
                 <div class="score-box player-score-box">
                     <span class="label">PLAYER</span>
@@ -76,6 +81,55 @@
             <div class="hud-actions-right">
                 <button id="manager-toggle-btn" class="btn icon-btn manager-btn">🤖 AUTO: OFF</button>
                 <button id="pause-btn" class="btn icon-btn pause-btn">⏸</button>
+            </div>
+        </div>
+
+        <!-- Editor View Settings Panel -->
+        <div id="editor-panel" class="editor-drawer">
+            <div class="drawer-content glass">
+                <h3 class="drawer-title">物理參數編輯器 / PARAMETER EDITOR</h3>
+                
+                <div class="setting-control">
+                    <div class="setting-header">
+                        <span>重力 / GRAVITY</span>
+                        <span id="val-gravity">0.22</span>
+                    </div>
+                    <input type="range" id="slider-gravity" min="0.05" max="0.8" step="0.01" value="0.22" class="slider">
+                </div>
+
+                <div class="setting-control">
+                    <div class="setting-header">
+                        <span>彈力 / ELASTICITY</span>
+                        <span id="val-elasticity">0.82</span>
+                    </div>
+                    <input type="range" id="slider-elasticity" min="0.4" max="1.0" step="0.02" value="0.82" class="slider">
+                </div>
+
+                <div class="setting-control">
+                    <div class="setting-header">
+                        <span>基礎球速 / BALL SPEED</span>
+                        <span id="val-ballspeed">8.0</span>
+                    </div>
+                    <input type="range" id="slider-ballspeed" min="4.0" max="18.0" step="0.5" value="8.0" class="slider">
+                </div>
+
+                <div class="setting-control">
+                    <div class="setting-header">
+                        <span>球拍寬度 / PADDLE WIDTH</span>
+                        <span id="val-paddlewidth">110</span>
+                    </div>
+                    <input type="range" id="slider-paddlewidth" min="60" max="220" step="5" value="110" class="slider">
+                </div>
+
+                <div class="setting-control">
+                    <div class="setting-header">
+                        <span>AI 速度 / AI SPEED</span>
+                        <span id="val-aispeed">6.8</span>
+                    </div>
+                    <input type="range" id="slider-aispeed" min="2.0" max="22.0" step="0.2" value="6.8" class="slider">
+                </div>
+
+                <button id="reset-editor-btn" class="btn danger-btn" style="margin-top: 15px;">重設預設值 / RESET</button>
             </div>
         </div>
 

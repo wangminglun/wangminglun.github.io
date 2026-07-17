@@ -299,7 +299,7 @@ class Ball {
         }
         
         this.y += this.vy;
-        this.vz -= GRAVITY;
+        this.vz -= window.game ? window.game.customGravity : GRAVITY;
         this.z += this.vz;
 
         // X boundaries (wall bounces outside table area)
@@ -407,7 +407,7 @@ class ParticleSystem {
             p.x += p.vx;
             p.y += p.vy;
             p.z += p.vz;
-            if (p.vz !== 0) p.vz -= GRAVITY * 0.5; // lighter gravity on particles
+            if (p.vz !== 0) p.vz -= (window.game ? window.game.customGravity : GRAVITY) * 0.5; // lighter gravity on particles
             
             p.life++;
             p.alpha = 1.0 - (p.life / p.maxLife);
@@ -433,6 +433,14 @@ class Game {
         this.playerScore = 0;
         this.aiScore = 0;
         this.managerView = false;
+
+        // Editor Parameters
+        this.customGravity = 0.22;
+        this.customElasticity = 0.82;
+        this.customBallSpeed = 8.0;
+        this.customPaddleWidth = 110;
+        this.customAiSpeed = 6.8;
+        this.editorActive = false;
 
         // Timers & Stats
         this.gameStartTime = 0;
@@ -524,6 +532,26 @@ class Game {
             this.mouseIsDown = false;
         });
 
+        // Difficulty Selection
+        const diffBtns = document.querySelectorAll('.diff-btn');
+        diffBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                diffBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                this.difficulty = btn.dataset.diff;
+                
+                // Sync AI speed slider with difficulty setting
+                const config = AI_DIFFICULTIES[this.difficulty];
+                this.customAiSpeed = config.speed;
+                const sliderAiSpeed = document.getElementById('slider-aispeed');
+                const valAiSpeed = document.getElementById('val-aispeed');
+                if (sliderAiSpeed && valAiSpeed) {
+                    sliderAiSpeed.value = this.customAiSpeed;
+                    valAiSpeed.textContent = this.customAiSpeed.toFixed(1);
+                }
+            });
+        });
+
         // UI Button Handlers
         document.getElementById('start-btn').addEventListener('click', () => {
             this.managerView = false;
@@ -534,6 +562,66 @@ class Game {
             this.startGame();
         });
         document.getElementById('manager-toggle-btn').addEventListener('click', () => this.toggleManagerView());
+        
+        // Editor Tab & Slider Listeners
+        const tabManager = document.getElementById('tab-manager');
+        const tabEditor = document.getElementById('tab-editor');
+        const editorPanel = document.getElementById('editor-panel');
+
+        tabManager.addEventListener('click', () => {
+            tabManager.classList.add('active');
+            tabEditor.classList.remove('active');
+            editorPanel.classList.remove('active');
+            this.editorActive = false;
+        });
+
+        tabEditor.addEventListener('click', () => {
+            tabEditor.classList.add('active');
+            tabManager.classList.remove('active');
+            editorPanel.classList.add('active');
+            this.editorActive = true;
+        });
+
+        // Slider listeners
+        const sliderGravity = document.getElementById('slider-gravity');
+        const valGravity = document.getElementById('val-gravity');
+        sliderGravity.addEventListener('input', (e) => {
+            this.customGravity = parseFloat(e.target.value);
+            valGravity.textContent = this.customGravity.toFixed(2);
+        });
+
+        const sliderElasticity = document.getElementById('slider-elasticity');
+        const valElasticity = document.getElementById('val-elasticity');
+        sliderElasticity.addEventListener('input', (e) => {
+            this.customElasticity = parseFloat(e.target.value);
+            valElasticity.textContent = this.customElasticity.toFixed(2);
+        });
+
+        const sliderBallSpeed = document.getElementById('slider-ballspeed');
+        const valBallSpeed = document.getElementById('val-ballspeed');
+        sliderBallSpeed.addEventListener('input', (e) => {
+            this.customBallSpeed = parseFloat(e.target.value);
+            valBallSpeed.textContent = this.customBallSpeed.toFixed(1);
+        });
+
+        const sliderPaddleWidth = document.getElementById('slider-paddlewidth');
+        const valPaddleWidth = document.getElementById('val-paddlewidth');
+        sliderPaddleWidth.addEventListener('input', (e) => {
+            this.customPaddleWidth = parseInt(e.target.value);
+            valPaddleWidth.textContent = this.customPaddleWidth;
+            this.player.width = this.customPaddleWidth;
+            this.ai.width = this.customPaddleWidth;
+        });
+
+        const sliderAiSpeed = document.getElementById('slider-aispeed');
+        const valAiSpeed = document.getElementById('val-aispeed');
+        sliderAiSpeed.addEventListener('input', (e) => {
+            this.customAiSpeed = parseFloat(e.target.value);
+            valAiSpeed.textContent = this.customAiSpeed.toFixed(1);
+        });
+
+        document.getElementById('reset-editor-btn').addEventListener('click', () => this.resetEditorParams());
+
         document.getElementById('pause-btn').addEventListener('click', () => this.pauseGame());
         document.getElementById('resume-btn').addEventListener('click', () => this.resumeGame());
         document.getElementById('restart-btn').addEventListener('click', () => this.resetMatch());
@@ -591,6 +679,7 @@ class Game {
         
         this.updateHUD();
         this.updateManagerUI();
+        this.updateSliderUI();
         this.state = 'PLAYING';
     }
 
@@ -607,6 +696,57 @@ class Game {
         } else {
             btn.classList.remove('active');
             btn.textContent = "🤖 AUTO: OFF";
+        }
+    }
+
+    resetEditorParams() {
+        this.customGravity = 0.22;
+        this.customElasticity = 0.82;
+        this.customBallSpeed = 8.0;
+        this.customPaddleWidth = 110;
+        
+        const config = AI_DIFFICULTIES[this.difficulty];
+        this.customAiSpeed = config.speed;
+
+        this.updateSliderUI();
+    }
+
+    updateSliderUI() {
+        const sliderGravity = document.getElementById('slider-gravity');
+        const valGravity = document.getElementById('val-gravity');
+        if (sliderGravity && valGravity) {
+            sliderGravity.value = this.customGravity;
+            valGravity.textContent = this.customGravity.toFixed(2);
+        }
+
+        const sliderElasticity = document.getElementById('slider-elasticity');
+        const valElasticity = document.getElementById('val-elasticity');
+        if (sliderElasticity && valElasticity) {
+            sliderElasticity.value = this.customElasticity;
+            valElasticity.textContent = this.customElasticity.toFixed(2);
+        }
+
+        const sliderBallSpeed = document.getElementById('slider-ballspeed');
+        const valBallSpeed = document.getElementById('val-ballspeed');
+        if (sliderBallSpeed && valBallSpeed) {
+            sliderBallSpeed.value = this.customBallSpeed;
+            valBallSpeed.textContent = this.customBallSpeed.toFixed(1);
+        }
+
+        const sliderPaddleWidth = document.getElementById('slider-paddlewidth');
+        const valPaddleWidth = document.getElementById('val-paddlewidth');
+        if (sliderPaddleWidth && valPaddleWidth) {
+            sliderPaddleWidth.value = this.customPaddleWidth;
+            valPaddleWidth.textContent = this.customPaddleWidth;
+        }
+        this.player.width = this.customPaddleWidth;
+        this.ai.width = this.customPaddleWidth;
+
+        const sliderAiSpeed = document.getElementById('slider-aispeed');
+        const valAiSpeed = document.getElementById('val-aispeed');
+        if (sliderAiSpeed && valAiSpeed) {
+            sliderAiSpeed.value = this.customAiSpeed;
+            valAiSpeed.textContent = this.customAiSpeed.toFixed(1);
         }
     }
 
@@ -813,7 +953,7 @@ class Game {
             aiTargetX = (GAME_X_MAX / 2) * 0.3 + this.ai.x * 0.7;
         }
         
-        this.ai.update(aiTargetX, null, config.speed);
+        this.ai.update(aiTargetX, null, this.customAiSpeed);
 
         // --- 4. Ball Collision and Scoring Logic ---
         
@@ -827,7 +967,7 @@ class Game {
             if (onTableX && onTableY) {
                 // Bounce ball up
                 this.ball.z = 0;
-                this.ball.vz = -this.ball.vz * BALL_BOUNCE_RESTITUTION;
+                this.ball.vz = -this.ball.vz * this.customElasticity;
                 
                 // Cap gravity bouncing to avoid endless micro-bounces
                 if (this.ball.vz < 1.0) this.ball.vz = 0;
@@ -911,7 +1051,7 @@ class Game {
                     this.ball.y = this.player.y - 5; // reposition slightly above
                     
                     // Boost horizontal speed on hit and ensure minimum speed
-                    const hitSpeed = Math.max(8.0, Math.abs(this.ball.vy) * 1.05);
+                    const hitSpeed = Math.max(this.customBallSpeed, Math.abs(this.ball.vy) * 1.05);
                     this.ball.vy = -hitSpeed;
                     
                     // Ball direction reflects hit location on paddle (adds steering)
@@ -969,7 +1109,7 @@ class Game {
                     this.ball.y = this.ai.y + 5; // reposition slightly below
                     
                     // Boost horizontal speed on hit and ensure minimum speed
-                    const hitSpeed = Math.max(8.0, Math.abs(this.ball.vy) * 1.05);
+                    const hitSpeed = Math.max(this.customBallSpeed, Math.abs(this.ball.vy) * 1.05);
                     this.ball.vy = hitSpeed;
                     
                     // Ball direction reflects hit location on paddle
