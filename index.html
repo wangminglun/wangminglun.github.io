@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="霓虹乒乓 (Neon Cyber Tennis) - 體驗科幻霓虹風格的2.5D乒乓球遊戲，具備動態音效、炫酷粒子與智能AI對手！">
+    <title>霓虹乒乓 - Neon Cyber Tennis</title>
+    <!-- Google Fonts for Cyberpunk Aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- The Game Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- Main Menu Overlay -->
+        <div id="menu-screen" class="overlay active">
+            <div class="menu-content">
+                <h1 class="game-title">NEON PADDLE</h1>
+                <h2 class="game-subtitle">CYBER TENNIS</h2>
+                
+                <div class="difficulty-section">
+                    <label>選擇難度 / DIFFICULTY</label>
+                    <div class="difficulty-options">
+                        <button id="diff-easy" class="btn diff-btn" data-diff="easy">簡單 / EASY</button>
+                        <button id="diff-medium" class="btn diff-btn active" data-diff="medium">中等 / NORMAL</button>
+                        <button id="diff-hard" class="btn diff-btn" data-diff="hard">困難 / HARD</button>
+                        <button id="diff-legend" class="btn diff-btn" data-diff="legend">傳奇 / LEGEND</button>
+                    </div>
+                </div>
+
+                <div class="menu-actions">
+                    <button id="start-btn" class="btn primary-btn">開始遊戲 / START GAME</button>
+                </div>
+                
+                <div class="audio-toggle-container">
+                    <button id="sound-toggle" class="btn icon-btn">
+                        <span class="icon">🔊</span> <span id="sound-status-text">音效: 開 / SOUND: ON</span>
+                    </button>
+                </div>
+
+                <div class="controls-guide">
+                    <h3>操作說明 / CONTROLS</h3>
+                    <p>滑鼠左右移動 或 按 鍵盤左右方向鍵 [←][→] 控制球拍</p>
+                    <p>當能量條滿時，按住 <span class="highlight">滑鼠左鍵</span> 或 <span class="highlight">[空白鍵]</span> 進行<span class="highlight-smash">扣殺 (SMASH)</span>！</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gameplay UI Overlay -->
+        <div id="gameplay-ui" class="ui-container">
+            <div class="scoreboard">
+                <div class="score-box player-score-box">
+                    <span class="label">PLAYER</span>
+                    <span id="player-score" class="score">0</span>
+                </div>
+                <div class="vs-text">-</div>
+                <div class="score-box ai-score-box">
+                    <span class="label">AI</span>
+                    <span id="ai-score" class="score">0</span>
+                </div>
+            </div>
+
+            <div class="smash-meter-container">
+                <div class="smash-label">SMASH POWER</div>
+                <div class="meter-bar-outer">
+                    <div id="smash-meter-inner" class="meter-bar-inner"></div>
+                </div>
+                <div id="smash-ready-text" class="smash-ready-text">READY!</div>
+            </div>
+
+            <button id="pause-btn" class="btn icon-btn pause-btn">⏸</button>
+        </div>
+
+        <!-- Pause Screen Overlay -->
+        <div id="pause-screen" class="overlay">
+            <div class="menu-content glass">
+                <h2 class="screen-title">遊戲暫停 / PAUSED</h2>
+                <div class="menu-actions vertical">
+                    <button id="resume-btn" class="btn primary-btn">繼續遊戲 / RESUME</button>
+                    <button id="restart-btn" class="btn secondary-btn">重新開始 / RESTART</button>
+                    <button id="quit-btn" class="btn danger-btn">回到主選單 / QUIT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Screen Overlay -->
+        <div id="gameover-screen" class="overlay">
+            <div class="menu-content glass">
+                <h1 id="gameover-title" class="game-over-status">YOU WIN</h1>
+                <div id="gameover-stats" class="game-stats">
+                    <div class="stat-row">
+                        <span>最長來回次數 / MAX RALLIES:</span>
+                        <span id="stat-max-rallies">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>扣殺次數 / SMASHES:</span>
+                        <span id="stat-smashes">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>比賽時間 / TIME:</span>
+                        <span id="stat-time">0s</span>
+                    </div>
+                </div>
+                <div class="menu-actions vertical">
+                    <button id="play-again-btn" class="btn primary-btn">再玩一次 / PLAY AGAIN</button>
+                    <button id="gameover-quit-btn" class="btn danger-btn">回到主選單 / QUIT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
