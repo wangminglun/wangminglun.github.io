@@ -574,3 +574,39 @@ body {
         padding: 20px;
     }
 }
+
+/* Manager View HUD Actions Styling */
+.hud-actions-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    pointer-events: auto;
+}
+
+.manager-btn {
+    pointer-events: auto;
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    border-color: var(--glass-border);
+    background: var(--glass-bg);
+    color: #a0a0c0;
+    transition: all 0.25s ease;
+}
+
+.manager-btn:hover {
+    border-color: var(--neon-magenta);
+    color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 0, 127, 0.25);
+}
+
+.manager-btn.active {
+    background: rgba(255, 0, 127, 0.18);
+    border-color: var(--neon-magenta);
+    color: #ffffff;
+    box-shadow: 
+        0 0 12px rgba(255, 0, 127, 0.4),
+        inset 0 0 4px rgba(255, 0, 127, 0.2);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    animation: blink 1.2s infinite alternate;
+}
+

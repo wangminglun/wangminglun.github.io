@@ -432,6 +432,7 @@ class Game {
         this.difficulty = 'medium';
         this.playerScore = 0;
         this.aiScore = 0;
+        this.managerView = false;
 
         // Timers & Stats
         this.gameStartTime = 0;
@@ -524,7 +525,15 @@ class Game {
         });
 
         // UI Button Handlers
-        document.getElementById('start-btn').addEventListener('click', () => this.startGame());
+        document.getElementById('start-btn').addEventListener('click', () => {
+            this.managerView = false;
+            this.startGame();
+        });
+        document.getElementById('manager-start-btn').addEventListener('click', () => {
+            this.managerView = true;
+            this.startGame();
+        });
+        document.getElementById('manager-toggle-btn').addEventListener('click', () => this.toggleManagerView());
         document.getElementById('pause-btn').addEventListener('click', () => this.pauseGame());
         document.getElementById('resume-btn').addEventListener('click', () => this.resumeGame());
         document.getElementById('restart-btn').addEventListener('click', () => this.resetMatch());
@@ -581,7 +590,24 @@ class Game {
         document.getElementById('gameover-screen').classList.remove('active');
         
         this.updateHUD();
+        this.updateManagerUI();
         this.state = 'PLAYING';
+    }
+
+    toggleManagerView() {
+        this.managerView = !this.managerView;
+        this.updateManagerUI();
+    }
+
+    updateManagerUI() {
+        const btn = document.getElementById('manager-toggle-btn');
+        if (this.managerView) {
+            btn.classList.add('active');
+            btn.textContent = "🤖 AUTO: ON";
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = "🤖 AUTO: OFF";
+        }
     }
 
     pauseGame() {
@@ -682,38 +708,88 @@ class Game {
 
         // --- 1. Update Player Paddle ---
         let targetPlayerX = this.mouseX;
+        let targetPlayerY = this.player.y;
         
-        // Map mouseY (0 to 600) to player game Y range [550, 960]
-        let normY = this.mouseY / CANVAS_HEIGHT;
-        let activeNormY = Math.max(0.5, Math.min(0.95, normY));
-        let targetPlayerY = 550 + ((activeNormY - 0.5) / 0.45) * (960 - 550);
+        const config = AI_DIFFICULTIES[this.difficulty];
 
-        // Keyboard override if keys are pressed
-        const keyboardSpeed = 15;
-        if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
-            targetPlayerX = this.player.x - keyboardSpeed;
-        }
-        if (this.keys['ArrowRight'] || this.keys['KeyD']) {
-            targetPlayerX = this.player.x + keyboardSpeed;
-        }
-        if (this.keys['ArrowUp'] || this.keys['KeyW']) {
-            targetPlayerY = this.player.y - keyboardSpeed;
-        }
-        if (this.keys['ArrowDown'] || this.keys['KeyS']) {
-            targetPlayerY = this.player.y + keyboardSpeed;
-        }
+        if (this.managerView) {
+            // Manager View: Player paddle controlled by AI (symmetrical to top AI)
+            targetPlayerY = 920; // Symmetrical depth for autoplay
+            
+            if (this.ball.vy > 0) {
+                // Ball is moving towards player, track it
+                const latencyIndex = Math.max(0, this.aiHistory.length - 1 - config.latency);
+                const rawTargetX = this.aiHistory[latencyIndex] || this.ball.x;
+                
+                // Add a little wobble error when ball bounces
+                if (this.ball.z <= 0 && Math.abs(this.ball.vz) < 1) {
+                    this.playerWobble = (Math.random() - 0.5) * config.error * 2;
+                }
+                if (!this.playerWobble) this.playerWobble = 0;
+                targetPlayerX = rawTargetX + this.playerWobble;
+            } else {
+                // Ball moving away, player drifts slowly back to center
+                targetPlayerX = (GAME_X_MAX / 2) * 0.3 + this.player.x * 0.7;
+            }
+            
+            this.player.update(targetPlayerX, targetPlayerY, config.speed);
+            
+            // Auto smash trigger: if autoplay has smash power ready and ball is in hitting height
+            if (this.smashMeter >= 100 && this.ball.vy > 0 && Math.abs(this.ball.y - this.player.y) <= 25 && this.ball.z > 15 && this.ball.z < 52) {
+                // Auto smash!
+                this.ball.isSmash = true;
+                const hitSpeed = Math.max(8.0, Math.abs(this.ball.vy) * 1.05);
+                this.ball.vy = -hitSpeed * 1.85;
+                this.ball.vx *= 1.4;
+                this.ball.vz = 4.2 + Math.random() * 0.6;
+                
+                this.smashMeter = 0;
+                this.smashCount++;
+                this.shakeStrength = 12;
+                sfx.playSmash();
+                this.particles.spawn(this.ball.x, this.ball.y, this.ball.z, '#ffc400', 25, true);
+                
+                this.ball.bouncesOnPlayerSide = 0;
+                this.ball.bouncesOnAiSide = 0;
+                this.ball.lastHitter = 'player';
+                this.rallyCount++;
+                this.updateHUD();
+            }
+        } else {
+            // Manual Mode: Player paddle controlled by mouse/keyboard
+            targetPlayerX = this.mouseX;
+            
+            // Map mouseY (0 to 600) to player game Y range [550, 960]
+            let normY = this.mouseY / CANVAS_HEIGHT;
+            let activeNormY = Math.max(0.5, Math.min(0.95, normY));
+            targetPlayerY = 550 + ((activeNormY - 0.5) / 0.45) * (960 - 550);
 
-        // Constrain player Y to [550, 960]
-        targetPlayerY = Math.max(550, Math.min(960, targetPlayerY));
+            // Keyboard override if keys are pressed
+            const keyboardSpeed = 15;
+            if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
+                targetPlayerX = this.player.x - keyboardSpeed;
+            }
+            if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+                targetPlayerX = this.player.x + keyboardSpeed;
+            }
+            if (this.keys['ArrowUp'] || this.keys['KeyW']) {
+                targetPlayerY = this.player.y - keyboardSpeed;
+            }
+            if (this.keys['ArrowDown'] || this.keys['KeyS']) {
+                targetPlayerY = this.player.y + keyboardSpeed;
+            }
 
-        this.player.update(targetPlayerX, targetPlayerY);
+            // Constrain player Y to [550, 960]
+            targetPlayerY = Math.max(550, Math.min(960, targetPlayerY));
+
+            this.player.update(targetPlayerX, targetPlayerY);
+        }
 
         // --- 2. Update Ball Position & Physics ---
         this.ball.update();
 
         // Save AI prediction queue
         this.aiHistory.push(this.ball.x);
-        const config = AI_DIFFICULTIES[this.difficulty];
         if (this.aiHistory.length > config.latency + 1) {
             this.aiHistory.shift();
         }
