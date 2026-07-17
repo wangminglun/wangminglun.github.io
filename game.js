@@ -323,25 +323,40 @@ class Paddle {
         this.height = 16;
         this.color = color;
         this.vx = 0;
+        this.vy = 0;
         this.targetX = GAME_X_MAX / 2;
     }
 
-    update(targetX, maxSpeed = null) {
+    update(targetX, targetY = null, maxSpeedX = null, maxSpeedY = null) {
         const prevX = this.x;
-        if (maxSpeed !== null) {
-            // Speed-limited movement (for AI)
+        const prevY = this.y;
+
+        // X-axis movement
+        if (maxSpeedX !== null) {
             const diffX = targetX - this.x;
             if (Math.abs(diffX) > 1) {
-                this.x += Math.sign(diffX) * Math.min(Math.abs(diffX), maxSpeed);
+                this.x += Math.sign(diffX) * Math.min(Math.abs(diffX), maxSpeedX);
             }
         } else {
             // Instant movement (for player mouse)
             this.x = targetX;
         }
-        
         // Constrain bounds
         this.x = Math.max(this.width / 2 + 30, Math.min(GAME_X_MAX - this.width / 2 - 30, this.x));
         this.vx = this.x - prevX;
+
+        // Y-axis movement
+        if (targetY !== null) {
+            if (maxSpeedY !== null) {
+                const diffY = targetY - this.y;
+                if (Math.abs(diffY) > 1) {
+                    this.y += Math.sign(diffY) * Math.min(Math.abs(diffY), maxSpeedY);
+                }
+            } else {
+                this.y = targetY;
+            }
+            this.vy = this.y - prevY;
+        }
     }
 }
 
@@ -437,6 +452,7 @@ class Game {
 
         // Player controls
         this.mouseX = GAME_X_MAX / 2;
+        this.mouseY = CANVAS_HEIGHT * 0.9;
         this.keys = {};
         this.mouseIsDown = false;
         
@@ -470,18 +486,21 @@ class Game {
             this.keys[e.code] = false;
         });
 
-        // Mouse/Touch movement on canvas
-        const handleMove = (clientX) => {
+        // Mouse/Touch movement on canvas (supports both X and Y movement)
+        const handleMove = (clientX, clientY) => {
             const rect = this.canvas.getBoundingClientRect();
             const relativeX = clientX - rect.left;
-            // Convert to 0-800 game space
+            const relativeY = clientY - rect.top;
+            
+            // Convert to game coordinate system
             this.mouseX = (relativeX / rect.width) * GAME_X_MAX;
+            this.mouseY = (relativeY / rect.height) * CANVAS_HEIGHT;
         };
 
-        this.canvas.addEventListener('mousemove', (e) => handleMove(e.clientX));
+        this.canvas.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
         this.canvas.addEventListener('touchmove', (e) => {
             if (e.touches.length > 0) {
-                handleMove(e.touches[0].clientX);
+                handleMove(e.touches[0].clientX, e.touches[0].clientY);
             }
             e.preventDefault();
         }, { passive: false });
@@ -664,14 +683,30 @@ class Game {
         // --- 1. Update Player Paddle ---
         let targetPlayerX = this.mouseX;
         
+        // Map mouseY (0 to 600) to player game Y range [550, 960]
+        let normY = this.mouseY / CANVAS_HEIGHT;
+        let activeNormY = Math.max(0.5, Math.min(0.95, normY));
+        let targetPlayerY = 550 + ((activeNormY - 0.5) / 0.45) * (960 - 550);
+
         // Keyboard override if keys are pressed
         const keyboardSpeed = 15;
         if (this.keys['ArrowLeft'] || this.keys['KeyA']) {
             targetPlayerX = this.player.x - keyboardSpeed;
-        } else if (this.keys['ArrowRight'] || this.keys['KeyD']) {
+        }
+        if (this.keys['ArrowRight'] || this.keys['KeyD']) {
             targetPlayerX = this.player.x + keyboardSpeed;
         }
-        this.player.update(targetPlayerX);
+        if (this.keys['ArrowUp'] || this.keys['KeyW']) {
+            targetPlayerY = this.player.y - keyboardSpeed;
+        }
+        if (this.keys['ArrowDown'] || this.keys['KeyS']) {
+            targetPlayerY = this.player.y + keyboardSpeed;
+        }
+
+        // Constrain player Y to [550, 960]
+        targetPlayerY = Math.max(550, Math.min(960, targetPlayerY));
+
+        this.player.update(targetPlayerX, targetPlayerY);
 
         // --- 2. Update Ball Position & Physics ---
         this.ball.update();
@@ -702,7 +737,7 @@ class Game {
             aiTargetX = (GAME_X_MAX / 2) * 0.3 + this.ai.x * 0.7;
         }
         
-        this.ai.update(aiTargetX, config.speed);
+        this.ai.update(aiTargetX, null, config.speed);
 
         // --- 4. Ball Collision and Scoring Logic ---
         
@@ -959,10 +994,10 @@ class Game {
         this.drawBackgroundGrid();
         this.drawTable();
         this.drawNet();
-        this.drawPaddle(this.ai, 60);
+        this.drawPaddle(this.ai, this.ai.y);
         this.drawBallShadow();
         this.drawParticles();
-        this.drawPaddle(this.player, 940);
+        this.drawPaddle(this.player, this.player.y);
         this.drawBall();
 
         this.ctx.restore();
